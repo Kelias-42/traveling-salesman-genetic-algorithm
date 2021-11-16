@@ -14,41 +14,70 @@ namespace TspGa
             // Initializes each individual of the population with the mutation rate and a random order for the cities
             for (int i = 0; i < populationSize; i++)
             {
-                currentGeneration.Add(new Individual(mutationRate, Enumerable.Range(0, map.points.Count).OrderBy(item => random.Next()).ToList(), map));
+                List<int> randomlyOrderedCities = new List<int> { 0 };
+                randomlyOrderedCities.AddRange(Enumerable.Range(1, map.points.Count - 1).OrderBy(item => random.Next()));
+                randomlyOrderedCities.Add(0);
+                currentGeneration.Add(new Individual(mutationRate, randomlyOrderedCities, map));
+            }
+            AssignFitnessCumSum();
+        }
+        private void AssignFitnessCumSum()
+        {
+            double cumSum = 0;
+            for (int i = 0; i < currentGeneration.Count; i++)
+            {
+                currentGeneration[i].fitnessScoreCumSum = cumSum;
+                cumSum += currentGeneration[i].fitnessScore;
             }
         }
-        private Individual SelectParent(List<Individual> population)
+        private Individual GetParent(List<Individual> population)
         {
-            Individual parent = null;
             Random random = new Random();
-            bool accept = false;
-            
-            while (!accept)
+            Individual parent = null;
+            double cumSumScale = population.Max(x => x.fitnessScoreCumSum);
+            List<Individual> possibleParents = population.Where(x => x.fitnessScoreCumSum <= random.NextDouble() * cumSumScale).ToList();
+            double biggestValidScore = -1;
+
+            foreach (Individual individual in possibleParents)
             {
-                parent = population[random.Next(population.Count)];
-                if (random.NextDouble() <= parent.fitnessScore)
-                    accept = true;
+                if (individual.fitnessScoreCumSum > biggestValidScore)
+                {
+                    biggestValidScore = individual.fitnessScoreCumSum;
+                    parent = individual;
+                }
             }
 
             return parent;
         }
-        private Individual GenerateOffspring(Individual firstParent, Individual secondParent, double mutationRate, Map map)
+        //private List<Individual> GenerateSmartOffspring(List<Individual> Parents, double mutationRate, Map map)
+        //{
+
+        //}
+        private List<Individual> SelectParents(int parentCount, List<Individual> population)
         {
-            List<int> offspringCities = secondParent.GetRemainingCities(firstParent.GetRandomCitySlice());
+            List<Individual> parents = new List<Individual>();
+
+            while (parents.Count != parentCount)
+            {
+                Individual parent = GetParent(population);
+                if (!parents.Contains(parent))
+                    parents.Add(parent);
+            }
+
+            return parents;
+        }
+        private Individual GenerateOffspring(List<Individual> parents, double mutationRate, Map map)
+        {
+            List<int> offspringCities = parents[0].GetRemainingCities(parents[1].GetRandomCitySlice());
             Individual offspring = new Individual(mutationRate, offspringCities, map);
 
             offspring.Mutate();
 
             return offspring;
         }
-        public double CreateNextGeneration(double mutationRate, Map map, int eliteCount)
+        public Individual CreateNextGeneration(double mutationRate, Map map, int eliteCount)
         {
-            // Assign fitness score to each individual
-            double maxDistance = currentGeneration.Max(x => x.totalDistance);
-            currentGeneration.ForEach(x => x.fitnessScore = 1 - x.totalDistance / maxDistance);
-
-            double shortestDistance = currentGeneration.Min(x => x.totalDistance);
-
+            Individual bestPerformingIndividual;
             List<Individual> nextGeneration = new List<Individual>();
 
             if (eliteCount > 0)
@@ -59,11 +88,13 @@ namespace TspGa
             }
 
             while (nextGeneration.Count != currentGeneration.Count)
-                nextGeneration.Add(GenerateOffspring(SelectParent(currentGeneration), SelectParent(currentGeneration), mutationRate, map));
+                nextGeneration.Add(GenerateOffspring(SelectParents(2, currentGeneration), mutationRate, map));
             
             currentGeneration = nextGeneration;
-            
-            return shortestDistance;
+            AssignFitnessCumSum();
+            bestPerformingIndividual = currentGeneration.OrderBy(x => x.totalDistance).First();
+
+            return bestPerformingIndividual;
         }
     }
 }

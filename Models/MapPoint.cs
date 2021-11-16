@@ -6,13 +6,11 @@ namespace TspGa
     {
         public int x;
         public int y;
-        public int pointNumber;
-        public MapPoint(int width, int height, int index)
+        public MapPoint(int width, int height, int seed)
         {
-            Random random = new();
+            Random random = new Random(seed);
             x = random.Next(0, width);
             y = random.Next(0, height);
-            pointNumber = index;
         }
     }
 }

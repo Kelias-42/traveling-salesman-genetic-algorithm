@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace TspGa
 {
@@ -11,6 +12,7 @@ namespace TspGa
             {
                 points.Add(new MapPoint(mapWidth, mapHeight, i));
             }
+            points = points.OrderBy(point => point.x).ToList();
         }
     }
 }

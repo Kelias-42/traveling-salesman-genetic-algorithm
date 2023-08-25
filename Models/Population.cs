@@ -49,10 +49,6 @@ namespace TspGa
 
             return parent;
         }
-        //private List<Individual> GenerateSmartOffspring(List<Individual> Parents, double mutationRate, Map map)
-        //{
-
-        //}
         private List<Individual> SelectParents(int parentCount, List<Individual> population)
         {
             List<Individual> parents = new List<Individual>();
